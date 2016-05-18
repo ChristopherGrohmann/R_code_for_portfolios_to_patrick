@@ -104,8 +104,9 @@ hh$Other = hh$anzahl_transactionen-hh$Stock -hh$Bond-hh$Fund-hh$Warrents- hh$Cer
 hh$Stockper = hh$Stock/hh$anzahl_transactionen
 hh$Bondper = hh$Bond/hh$anzahl_transactionen
 hh$Fundper = hh$Fund/hh$anzahl_transactionen
+hh$Warrentsper = hh$Warrents/hh$anzahl_transactionen
 hh$Certificateper = hh$Certificate/hh$anzahl_transactionen
-hh$Other = hh$Other/hh$anzahl_transactionen
+hh$Otherper = hh$Other/hh$anzahl_transactionen
 
 #By year, kann ich noch machen
 hhy = transactions[,user_id,by=.(user_id,year= year(date))]
@@ -115,19 +116,54 @@ setkey(hhy, user_id)
 hhy <- hhy[hh, nomatch=0]
 
 setkey(transactions, user_id)
-hhy$anzahl_transactionen = transactions[,.(anzahl_transactionen =length(transaction_id)),by=.(user_id,year= year(date))]$anzahl_transactionen
+hhy$anzahl_transactionen_y = transactions[,.(anzahl_transactionen =length(transaction_id)),by=.(user_id,year= year(date))]$anzahl_transactionen
 hhy$Stock = transactions[,.(Stock=sum((instrument_type==1 ), na.rm=TRUE)),by=.(user_id,year= year(date))]$Stock
 hhy$Bond = transactions[,.(Bond=sum((instrument_type==2 ), na.rm=TRUE)),by=.(user_id,year= year(date))]$Bond
 hhy$Fund = transactions[,.(Fund=sum((instrument_type==7 ), na.rm=TRUE)),by=.(user_id,year= year(date))]$Fund
 hhy$Warrents = transactions[,.(Warrents=sum((instrument_type==3 ), na.rm=TRUE)),by=.(user_id,year= year(date))]$Warrents
 hhy$Certificate = transactions[,.(Certificate=sum((instrument_type== 13), na.rm=TRUE)),by=.(user_id,year= year(date))]$Certificate
-hhy$Other = hhy$anzahl_transactionen-hhy$Stock -hhy$Bond-hhy$Fund-hhy$Warrents- hhy$Certificate
+hhy$Other = hhy$anzahl_transactionen_y-hhy$Stock -hhy$Bond-hhy$Fund-hhy$Warrents- hhy$Certificate
 
+hhy$Stockper = hhy$Stock/hhy$anzahl_transactionen_y
+hhy$Bondper = hhy$Bond/hhy$anzahl_transactionen_y
+hhy$Fundper =hhy$Fund/hhy$anzahl_transactionen_y
+hhy$Warrentsper = hhy$Warrents/hhy$anzahl_transactionen_y
+hhy$Certificateper = hhy$Certificate/hhy$anzahl_transactionen_y
+hhy$Otherper=hhy$Other/hhy$anzahl_transactionen_y
+  
 #Wih value
-hhy$ValueStock = transactions[instrument_type==7,.(ValueStock=sum(value) ),by=.(user_id,year= year(date))]$ValueStock
-hhy
+#hhy$ValueStock = transactions[instrument_type==7,.(ValueStock=sum(value) ),by=.(user_id,year= year(date))]$ValueStock
 
 
+
+####################################################################################################
+#6 Descriptive statistics and plots
+library(ggplot2)
+
+#Pie chart of transactions at a single point in time
+pie(c(mean(hh$Stockper),mean(hh$Bondper),mean(hh$Fundper), mean(hh$Warrentsper),mean(hh$Certificateper),mean(hh$Otherper)),
+    labels = a,
+    main="Percentage of transactions in Category 2000 - 2011")
+
+
+#Stacked Area chart of transactions in categories over time
+#
+d=data.frame(t= rep(as.numeric(unique(hhy$year)), each = 6))
+d$category = rep(a,12)
+d = d[order(d$t),] 
+
+for ( i in 1:12){
+  d$meanvalue[(i-1)*6+1] = hhy[year == noquote(paste(d$t[i])),.(x = mean(Stockper))]$x
+  d$meanvalue[(i-1)*6+2] = hhy[year == noquote(paste(d$t[i])),.(x = mean(Bondper))]$x 
+  d$meanvalue[(i-1)*6+3] = hhy[year == noquote(paste(d$t[i])),.(x = mean(Fundper))]$x
+  d$meanvalue[(i-1)*6+4] = hhy[year == noquote(paste(d$t[i])),.(x = mean(Warrentsper))]$x
+  d$meanvalue[(i-1)*6+5] = hhy[year == noquote(paste(d$t[i])),.(x = mean(Certificateper))]$x
+  d$meanvalue[(i-1)*6+6] = hhy[year == noquote(paste(d$t[i])),.(x = mean(Otherper))]$x
+}
+
+ggplot(d, aes(x= t, y = meanvalue, group= category, fill=meanvalue)) + geom_area(position="fill")
+
+ggplot(hhy, aes(x= hhy$year, y = c(mean(hhy$Stock),mean(hhy$Bond)) ,group= hhy$year,fill=var)) + geom_area(position="fill")
 
 
 
