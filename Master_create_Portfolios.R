@@ -14,7 +14,7 @@ library(RODBC)
 library (data.table)
 
 conn <- odbcConnect(dsn="Cronbach", uid="extern_root", pwd="hiwisskiera1")
-transactions <- data.table(sqlQuery(conn, "SELECT * FROM remove_error2  LIMIT 100000")) #with limit atm
+transactions <- data.table(sqlQuery(conn, "SELECT * FROM remove_error2  LIMIT 1000000")) #with limit atm
 odbcClose(conn)
 
 setkey(transactions,transaction_id)
@@ -41,7 +41,7 @@ transactions$value = transactions[,amount*price*exchange_rate*(1-flag)]
 # hh = unique(transactions$user_id)
 #Alternative
 setkey(transactions, user_id)
-hh = transactions[,user_id,by=user_id]
+hh = transactions[,.(anzahl_transactionen = 0),by=user_id]
 # dates = unique(transactions$date)
 # 
 # portfolios = array(data = NA, dim = c(length(hh),1000,3,length(dates)))#, dimnames = list("hh","positions","attributes","date"))
@@ -97,7 +97,7 @@ setkey(transactions, user_id)
 hh$Stock = transactions[,.(Stock=sum((instrument_type==1 ), na.rm=TRUE)),by=user_id]$Stock
 hh$Bond = transactions[,.(Bond=sum((instrument_type==2 ), na.rm=TRUE)),by=user_id]$Bond
 hh$Fund = transactions[,.(Fund=sum((instrument_type==7 ), na.rm=TRUE)),by=user_id]$Fund
-hh$Warrents = transactions[,.(Warrents=sum((instrument_type==3 ), na.rm=TRUE)),by=user_id]$Warrents
+hh$Warrents = transactions[,.(Warrents=sum((instrument_type==4 ), na.rm=TRUE)),by=user_id]$Warrents
 hh$Certificate = transactions[,.(Certificate=sum((instrument_type== 13), na.rm=TRUE)),by=user_id]$Certificate
 hh$Other = hh$anzahl_transactionen-hh$Stock -hh$Bond-hh$Fund-hh$Warrents- hh$Certificate
 #percentages
@@ -108,6 +108,11 @@ hh$Warrentsper = hh$Warrents/hh$anzahl_transactionen
 hh$Certificateper = hh$Certificate/hh$anzahl_transactionen
 hh$Otherper = hh$Other/hh$anzahl_transactionen
 
+c(mean(hh$Stockper),mean(hh$Bondper),mean(hh$Fundper), mean(hh$Warrentsper),mean(hh$Certificateper)
+  ,mean(hh$Otherper),mean(hh$yearly_transactions))
+c(sd(hh$Stockper),sd(hh$Bondper),sd(hh$Fundper), sd(hh$Warrentsper),sd(hh$Certificateper)
+  ,sd(hh$Otherper),sd(hh$yearly_transactions))
+########################################################################
 #By year, kann ich noch machen
 hhy = transactions[,user_id,by=.(user_id,year= year(date))]
 
@@ -120,7 +125,7 @@ hhy$anzahl_transactionen_y = transactions[,.(anzahl_transactionen =length(transa
 hhy$Stock = transactions[,.(Stock=sum((instrument_type==1 ), na.rm=TRUE)),by=.(user_id,year= year(date))]$Stock
 hhy$Bond = transactions[,.(Bond=sum((instrument_type==2 ), na.rm=TRUE)),by=.(user_id,year= year(date))]$Bond
 hhy$Fund = transactions[,.(Fund=sum((instrument_type==7 ), na.rm=TRUE)),by=.(user_id,year= year(date))]$Fund
-hhy$Warrents = transactions[,.(Warrents=sum((instrument_type==3 ), na.rm=TRUE)),by=.(user_id,year= year(date))]$Warrents
+hhy$Warrents = transactions[,.(Warrents=sum((instrument_type==4 ), na.rm=TRUE)),by=.(user_id,year= year(date))]$Warrents
 hhy$Certificate = transactions[,.(Certificate=sum((instrument_type== 13), na.rm=TRUE)),by=.(user_id,year= year(date))]$Certificate
 hhy$Other = hhy$anzahl_transactionen_y-hhy$Stock -hhy$Bond-hhy$Fund-hhy$Warrents- hhy$Certificate
 
@@ -130,9 +135,14 @@ hhy$Fundper =hhy$Fund/hhy$anzahl_transactionen_y
 hhy$Warrentsper = hhy$Warrents/hhy$anzahl_transactionen_y
 hhy$Certificateper = hhy$Certificate/hhy$anzahl_transactionen_y
 hhy$Otherper=hhy$Other/hhy$anzahl_transactionen_y
-  
+
+#hhy$est_portfolio_assest = 
+#######################################################################  
 #Wih value
-#hhy$ValueStock = transactions[instrument_type==7,.(ValueStock=sum(value) ),by=.(user_id,year= year(date))]$ValueStock
+  
+res <- transactions[,.(value=0), by=.(user_id,year= year(date))]
+setkey(transactions, user_id)
+hhy$ValueStock = transactions[,.(ValueStock= sum(value[instrument_type==7])),by=.(user_id,year= year(date))]$ValueStock
 
 
 
@@ -151,15 +161,18 @@ pie(c(mean(hh$Stockper),mean(hh$Bondper),mean(hh$Fundper), mean(hh$Warrentsper),
 d=data.frame(t= rep(as.numeric(unique(hhy$year)), each = 6))
 d$category = rep(a,12)
 d = d[order(d$t),] 
+z = d$t
 
-for ( i in 1:12){
-  d$meanvalue[(i-1)*6+1] = hhy[year == noquote(paste(d$t[i])),.(x = mean(Stockper))]$x
-  d$meanvalue[(i-1)*6+2] = hhy[year == noquote(paste(d$t[i])),.(x = mean(Bondper))]$x 
-  d$meanvalue[(i-1)*6+3] = hhy[year == noquote(paste(d$t[i])),.(x = mean(Fundper))]$x
-  d$meanvalue[(i-1)*6+4] = hhy[year == noquote(paste(d$t[i])),.(x = mean(Warrentsper))]$x
-  d$meanvalue[(i-1)*6+5] = hhy[year == noquote(paste(d$t[i])),.(x = mean(Certificateper))]$x
-  d$meanvalue[(i-1)*6+6] = hhy[year == noquote(paste(d$t[i])),.(x = mean(Otherper))]$x
+for (i in 1:12){
+  d$meanvalue[((i-1)*6)+1] = hhy[year == noquote(paste(d$t[((i-1)*6)+1])),.(x = mean(Stockper))]$x
+  d$meanvalue[((i-1)*6)+2] = hhy[year == noquote(paste(d$t[((i-1)*6)+1])),.(x = mean(Bondper))]$x 
+  d$meanvalue[((i-1)*6)+3] = hhy[year == noquote(paste(d$t[((i-1)*6)+1])),.(x = mean(Fundper))]$x
+  d$meanvalue[((i-1)*6)+4] = hhy[year == noquote(paste(d$t[((i-1)*6)+1])),.(x = mean(Warrentsper))]$x
+  d$meanvalue[((i-1)*6)+5] = hhy[year == noquote(paste(d$t[((i-1)*6)+1])),.(x = mean(Certificateper))]$x
+  d$meanvalue[((i-1)*6)+6] = hhy[year == noquote(paste(d$t[((i-1)*6)+1])),.(x = mean(Otherper))]$x
 }
+
+write.csv(d, file = "C:/Users/Grohmann/Documents/Interactive data/Descriptive/time_series_of_portfolio_share.csv") 
 
 ggplot(d, aes(x= t, y = meanvalue, group= category, fill=meanvalue)) + geom_area(position="fill")
 
