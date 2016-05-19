@@ -7,4 +7,4 @@ bestinstr[transactions[,instrument_description,by = .(instrument_id,date)], inst
 bestinstr[bestinstr[,.(sumall = sum(sumvalue)),by =instrument_id], sumall:=i.sumall, on = "instrument_id"]
 bestinstr = bestinstr[order(-sumall,date)]
 
-write.csv(bestinstr[1:2000], file = "C:/Users/Grohmann/Documents/Interactive data/Descriptive/time_series_of_2000_stock_dates.csv")
+write.csv(bestinstr[1:15000], file = "C:/Users/Grohmann/Documents/Interactive data/Descriptive/time_series_of_2000_stock_dates.csv")

@@ -114,7 +114,7 @@ c(sd(hh$Stockper),sd(hh$Bondper),sd(hh$Fundper), sd(hh$Warrentsper),sd(hh$Certif
   ,sd(hh$Otherper),sd(hh$yearly_transactions))
 ########################################################################
 #By year, kann ich noch machen
-hhy = transactions[,user_id,by=.(user_id,year= year(date))]
+hhy <- transactions[,.(anzahl_transactionen_y=0),by=.(user_id,year= year(date))]
 
 setkey(hh, user_id)
 setkey(hhy, user_id)
@@ -122,6 +122,7 @@ hhy <- hhy[hh, nomatch=0]
 
 setkey(transactions, user_id)
 hhy$anzahl_transactionen_y = transactions[,.(anzahl_transactionen =length(transaction_id)),by=.(user_id,year= year(date))]$anzahl_transactionen
+hhy[transactions[,.(value_y =sum(value)),by=.(user_id,year= year(date))],value_y :=i.value_y, on = c(user_id = "user_id",year= "year")]
 hhy$Stock = transactions[,.(Stock=sum((instrument_type==1 ), na.rm=TRUE)),by=.(user_id,year= year(date))]$Stock
 hhy$Bond = transactions[,.(Bond=sum((instrument_type==2 ), na.rm=TRUE)),by=.(user_id,year= year(date))]$Bond
 hhy$Fund = transactions[,.(Fund=sum((instrument_type==7 ), na.rm=TRUE)),by=.(user_id,year= year(date))]$Fund
@@ -136,14 +137,25 @@ hhy$Warrentsper = hhy$Warrents/hhy$anzahl_transactionen_y
 hhy$Certificateper = hhy$Certificate/hhy$anzahl_transactionen_y
 hhy$Otherper=hhy$Other/hhy$anzahl_transactionen_y
 
-#hhy$est_portfolio_assest = 
 #######################################################################  
 #Wih value
-  
-res <- transactions[,.(value=0), by=.(user_id,year= year(date))]
-setkey(transactions, user_id)
-hhy$ValueStock = transactions[,.(ValueStock= sum(value[instrument_type==7])),by=.(user_id,year= year(date))]$ValueStock
 
+hhy[transactions[instrument_type==1,.(ValueStock = sum(value)), by=.(user_id,year= year(date))]
+    ,ValueStock:= i.ValueStock, on = c(user_id = "user_id",year= "year")]
+hhy[transactions[instrument_type==2,.(ValueBond = sum(value)), by=.(user_id,year= year(date))]
+    ,ValueBond:= i.ValueBond, on = c(user_id = "user_id",year= "year")]
+hhy[transactions[instrument_type==7,.(ValueFund = sum(value)), by=.(user_id,year= year(date))]
+    ,ValueFund:= i.ValueFund, on = c(user_id = "user_id",year= "year")]
+hhy[transactions[instrument_type==4,.(ValueWarrents = sum(value)), by=.(user_id,year= year(date))]
+    ,ValueWarrents:= i.ValueWarrents, on = c(user_id = "user_id",year= "year")]
+hhy[transactions[instrument_type==2,.(ValueCertificate = sum(value)), by=.(user_id,year= year(date))]
+    ,ValueCertificate:= i.ValueCertificate, on = c(user_id = "user_id",year= "year")]
+hhy$ValueOther <- hhy$value_y- hhy$ValueStock - hhy$ValueBond - hhy$ValueFund - hhy$ValueWarrents -hhy$ValueCertificate
+
+
+#######################################################################
+#estimating average portfolio size:
+hhy$add_per_year = hhy$avaerage_transaction*hhy$yearly_transactions+(1-2*hhy$anteil_verkaufe)
 
 
 ####################################################################################################
@@ -153,8 +165,11 @@ library(ggplot2)
 #Pie chart of transactions at a single point in time
 pie(c(mean(hh$Stockper),mean(hh$Bondper),mean(hh$Fundper), mean(hh$Warrentsper),mean(hh$Certificateper),mean(hh$Otherper)),
     labels = a,
-    main="Percentage of transactions in Category 2000 - 2011")
+    main="Percentage of transactions in Category 2000 - 2011: semi-real portfolios")
 
+pie(c(54.62,3.41,32.48,3.02,4.94,1.54),
+    labels = a,
+    main="Percentage of transactions in Category 2000 - 201:real portfolios")
 
 #Stacked Area chart of transactions in categories over time
 #

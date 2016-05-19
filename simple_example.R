@@ -11,6 +11,11 @@ users$value_one = actions[category==1,.(value_one =sum(value)),by= User_id]$valu
 res <- actions[,.(value=0), by=User_id]
 res[actions[category==1, sum(value), by=User_id], value:=V1, on="User_id"]
 
+
+
+
+
+#Most Usefull
 users = actions[, .(value_one = 0), by = User_id]; 
 users[actions[category == 1, .(value_one = sum(value)),
               by = User_id], on = 'User_id', value_one := i.value_one]
