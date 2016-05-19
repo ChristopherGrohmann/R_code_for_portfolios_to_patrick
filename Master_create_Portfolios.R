@@ -139,23 +139,34 @@ hhy$Otherper=hhy$Other/hhy$anzahl_transactionen_y
 
 #######################################################################  
 #Wih value
-
+hhy$ValueStock <- hhy[,.(ValueStock =0)]
 hhy[transactions[instrument_type==1,.(ValueStock = sum(value)), by=.(user_id,year= year(date))]
     ,ValueStock:= i.ValueStock, on = c(user_id = "user_id",year= "year")]
+hhy$ValueBond <- hhy[,.(ValueBond =0)]
 hhy[transactions[instrument_type==2,.(ValueBond = sum(value)), by=.(user_id,year= year(date))]
     ,ValueBond:= i.ValueBond, on = c(user_id = "user_id",year= "year")]
+hhy$ValueFund <- hhy[,.(ValueFund =0)]
 hhy[transactions[instrument_type==7,.(ValueFund = sum(value)), by=.(user_id,year= year(date))]
     ,ValueFund:= i.ValueFund, on = c(user_id = "user_id",year= "year")]
+hhy$ValueWarrents <- hhy[,.(ValueWarrents =0)]
 hhy[transactions[instrument_type==4,.(ValueWarrents = sum(value)), by=.(user_id,year= year(date))]
     ,ValueWarrents:= i.ValueWarrents, on = c(user_id = "user_id",year= "year")]
+hhy$ValueCertificate <- hhy[,.(ValueCertificate =0)]
 hhy[transactions[instrument_type==2,.(ValueCertificate = sum(value)), by=.(user_id,year= year(date))]
     ,ValueCertificate:= i.ValueCertificate, on = c(user_id = "user_id",year= "year")]
+hhy$ValueOther <- hhy[,.(ValueOther =0)]
 hhy$ValueOther <- hhy$value_y- hhy$ValueStock - hhy$ValueBond - hhy$ValueFund - hhy$ValueWarrents -hhy$ValueCertificate
 
 
 #######################################################################
 #estimating average portfolio size:
-hhy$add_per_year = hhy$avaerage_transaction*hhy$yearly_transactions+(1-2*hhy$anteil_verkaufe)
+hhy$add_per_year = hhy$avaerage_transaction*hhy$yearly_transactions*(1-hhy$anteil_verkaufe)
+mean(hhy[,.(x = mean(add_per_year)), by = user_id]$x)
+median(hhy[,.(x = mean(add_per_year)), by = user_id]$x)
+
+hhy$sell_per_year = hhy$avaerage_transaction*hhy$yearly_transactions*(hhy$anteil_verkaufe)
+mean(hhy[,.(x = mean(sell_per_year)), by = user_id]$x)
+median(hhy[,.(x = mean(sell_per_year)), by = user_id]$x)
 
 
 ####################################################################################################
