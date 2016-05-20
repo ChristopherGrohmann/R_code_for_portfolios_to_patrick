@@ -28,7 +28,7 @@ setkey(instruments,instrument_id)
 #secifying what time the transactions can be taken from
 transactions = transactions[date <= "2011-01-01",,]
 transactions = transactions[date >= "2000-01-01",,]
-transactions$value = transactions[,amount*price*exchange_rate*(1-flag)]
+transactions$value = transactions[,(amount*price*exchange_rate * (1 - flag))+ (flag*amount*exchange_rate)]
 
 #####################################################################################################
 #2. Join the data 
@@ -157,7 +157,30 @@ hhy[transactions[instrument_type==2,.(ValueCertificate = sum(value)), by=.(user_
     ,ValueCertificate:= i.ValueCertificate, on = c(user_id = "user_id",year= "year")]
 hhy$ValueOther <- hhy[,.(ValueOther =0)]
 hhy$ValueOther <- hhy$value_y- hhy$ValueStock - hhy$ValueBond - hhy$ValueFund - hhy$ValueWarrent -hhy$ValueCertificate
+#######################################################################
+#Descriptive Statistics about values
+hhy = hhy[value_y != 0]
 
+hhy$ValueStockper = hhy$ValueStock/hhy$value_y
+hhy$ValueBondper = hhy$ValueBond/hhy$value_y
+hhy$ValueFundper =hhy$ValueFund/hhy$value_y
+hhy$ValueWarrentper = hhy$ValueWarrent/hhy$value_y
+hhy$ValueCertificateper = hhy$ValueCertificate/hhy$value_y
+hhy$ValueOtherper=hhy$ValueOther/hhy$value_y
+
+c( mean(hhy[,.(x = mean(ValueStockper)), by = user_id]$x),
+   mean(hhy[,.(x = mean(ValueBondper)), by = user_id]$x),
+   mean(hhy[,.(x = mean(ValueFundper)), by = user_id]$x),
+   mean(hhy[,.(x = mean(ValueWarrentper)), by = user_id]$x),
+   mean(hhy[,.(x = mean(ValueCertificateper)), by = user_id]$x),
+   mean(hhy[,.(x = mean(ValueOtherper)), by = user_id]$x))
+
+c( sd(hhy[,.(x = mean(ValueStockper)), by = user_id]$x),
+   sd(hhy[,.(x = mean(ValueBondper)), by = user_id]$x),
+   sd(hhy[,.(x = mean(ValueFundper)), by = user_id]$x),
+   sd(hhy[,.(x = mean(ValueWarrentper)), by = user_id]$x),
+   sd(hhy[,.(x = mean(ValueCertificateper)), by = user_id]$x),
+   sd(hhy[,.(x = mean(ValueOtherper)), by = user_id]$x))
 
 #######################################################################
 #estimating average portfolio size:
@@ -168,7 +191,6 @@ median(hhy[,.(x = mean(add_per_year)), by = user_id]$x)
 hhy$sell_per_year = hhy$avaerage_transaction*hhy$yearly_transactions*(hhy$anteil_verkaufe)
 mean(hhy[,.(x = mean(sell_per_year)), by = user_id]$x)
 median(hhy[,.(x = mean(sell_per_year)), by = user_id]$x)
-
 
 ####################################################################################################
 #6 Descriptive statistics and plots
@@ -181,8 +203,7 @@ pie(c(mean(hh$Stockper),mean(hh$Bondper),mean(hh$Fundper), mean(hh$Warrentper),m
 
 pie(c(54.62,3.41,32.48,3.02,4.94,1.54),
     labels = a,
-    main="Percentage of transactions in Category 2000 - 201:real portfolios")
-
+    main="Percentage of assetallocation in Category 2000 - 2011:real portfolios")
 #Stacked Area chart of transactions in categories over time
 #
 
@@ -197,13 +218,24 @@ allplot <- merge(allplot, hhy[ ,.(plotvalue = mean(Certificate),(Category="Certi
                  ,by = c("year","V2", "plotvalue"), all = TRUE)
 allplot <- merge(allplot, hhy[ ,.(plotvalue = mean(Other),(Category="Other") ), by = year]
                  ,by = c("year","V2", "plotvalue"), all = TRUE)
-#allplot <- allplot[order(a= c("Stock", "Bond", "Fund", "Warrent", "Certificate", "Other"))]
+allplot <- allplot[order(Category = c("Stock", "Bond", "Fund", "Warrent", "Certificate", "Other"))]
 
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-ggplot(allplot, aes(x= year, y= plotvalue, group = V2, fill= plotvalue )) + geom_area(aes(fill= V2), position = 'stack') 
-+ scale_fill_manual(values=cbPalette)
+ggplot(allplot, aes(x= year, y= plotvalue, group = V2, fill= plotvalue )) + geom_area(aes(fill= V2), position = 'stack') +
+    ggtitle( "Number of transactions in assetclass over time")
 
 
-
-
+allplot  <- hhy[ ,.(plotvalue = mean(ValueStock),(Category="Stock") ), by = year]
+allplot <- merge(allplot, hhy[ ,.(plotvalue = mean(ValueBond),(Category="Bond") ), by = year]
+                 ,by = c("year","V2", "plotvalue"), all = TRUE)
+allplot <- merge(allplot, hhy[ ,.(plotvalue = mean(ValueFund),(Category="Fund") ), by = year]
+                 ,by = c("year","V2", "plotvalue"), all = TRUE)
+allplot <- merge(allplot, hhy[ ,.(plotvalue = mean(ValueWarrent),(Category="Warrent") ), by = year]
+                 ,by = c("year","V2", "plotvalue"), all = TRUE)
+allplot <- merge(allplot, hhy[ ,.(plotvalue = mean(ValueCertificate),(Category="Certificate") ), by = year]
+                 ,by = c("year","V2", "plotvalue"), all = TRUE)
+allplot <- merge(allplot, hhy[ ,.(plotvalue = mean(ValueOther),(Category="Other") ), by = year]
+                 ,by = c("year","V2", "plotvalue"), all = TRUE)
+ggplot(allplot, aes(x= year, y= plotvalue, group = V2, fill= plotvalue )) + geom_area(aes(fill= V2), position = 'stack') +
+      ggtitle( "Volume of transactions in assetclass over time")
 
