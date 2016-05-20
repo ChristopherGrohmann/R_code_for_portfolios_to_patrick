@@ -29,7 +29,7 @@ setkey(instruments,instrument_id)
 transactions = transactions[date <= "2011-01-01",,]
 transactions = transactions[date >= "2000-01-01",,]
 transactions$value = transactions[,amount*price*exchange_rate*(1-flag)]
-transactions$value = min(1000000,transactions$value)
+
 #####################################################################################################
 #2. Join the data 
 
