@@ -29,7 +29,18 @@ bestinstr= merge(bestinstr,vergleich[,.(date = as.Date(X.NAME. , "%d.%m.%Y"),
                                         instrument_description = "DEUTSCHE BANK AG"
                                         )],
                  by = c("date","sumvalue", "from", "instrument_description"), all = TRUE)
-
-p  <- ggplot(bestinstr[instrument_description=="DEUTSCHE BANK AG"], aes(x = date,y= sumvalue)) +
+ggplot(bestinstr[instrument_description=="DEUTSCHE BANK AG"], aes(x = date,y= sumvalue)) +
   facet_grid(from~., scale="free") +    
   geom_line(stat = "identity") + xlab("year") + ylab("tradeVolume")
+
+bestinstr= merge(bestinstr,vergleich[,.(date = as.Date(X.NAME. , "%d.%m.%Y"),
+                                        from="Real-world-data",
+                                        sumvalue = DEUTSCHE.TELEKOM.AG,
+                                        instrument_description = "DEUTSCHE TELEKOM AG"
+                                        )],
+by = c("date","sumvalue", "from", "instrument_description"), all = TRUE)
+ggplot(bestinstr[instrument_description=="DEUTSCHE TELEKOM AG"], aes(x = date,y= sumvalue)) +
+  facet_grid(from~., scale="free") +    
+  geom_line(stat = "identity") + xlab("year") + ylab("tradeVolume")
+
+
