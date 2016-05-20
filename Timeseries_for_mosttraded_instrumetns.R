@@ -23,6 +23,7 @@ vergleich = as.data.table(vergleich)
 ########################################################################################################
 #Vergleich von unseren Daten mit real-world-data
 
+posdates = bestinstr[instrument_description=="DEUTSCHE BANK AG", date]
 bestinstr= merge(bestinstr,vergleich[,.(date = as.Date(X.NAME. , "%d.%m.%Y"),
                                         from="Real-world-data",
                                         sumvalue = DEUTSCHE.BANK.AG,
@@ -33,6 +34,17 @@ ggplot(bestinstr[instrument_description=="DEUTSCHE BANK AG"], aes(x = date,y= su
   facet_grid(from~., scale="free") +    
   geom_line(stat = "identity") + xlab("year") + ylab("tradeVolume")
 
+bestinstr$sumvalue[is.na(bestinstr$sumvalue)] <- 0
+
+posdates <- merge(bestinstr[instrument_description=="DEUTSCHE BANK AG" & from =="Real-world-data",.(date,sumvalue)],
+                  bestinstr[instrument_description=="DEUTSCHE BANK AG" & from =="Semi-real-portfolio",.(date,sumvalue)],
+                  by = "date")
+
+y <- posdates$sumvalue.x
+x <- posdates$sumvalue.y
+simplemodel <- lm( y~x)
+summary(simplemodel)
+
 bestinstr= merge(bestinstr,vergleich[,.(date = as.Date(X.NAME. , "%d.%m.%Y"),
                                         from="Real-world-data",
                                         sumvalue = DEUTSCHE.TELEKOM.AG,
@@ -42,5 +54,4 @@ by = c("date","sumvalue", "from", "instrument_description"), all = TRUE)
 ggplot(bestinstr[instrument_description=="DEUTSCHE TELEKOM AG"], aes(x = date,y= sumvalue)) +
   facet_grid(from~., scale="free") +    
   geom_line(stat = "identity") + xlab("year") + ylab("tradeVolume")
-
 
