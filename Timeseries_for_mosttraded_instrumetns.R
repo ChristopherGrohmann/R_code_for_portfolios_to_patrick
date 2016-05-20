@@ -19,24 +19,27 @@ bestinstr = bestinstr[order(-sumall,date)]
 bestinstr$from <- "Semi-real-portfolio"
 
 vergleich <- read.csv("C:/Users/Grohmann/Documents/Interactive data/Vergleichsdaten_Bloomberg_co/Daten_Volume_Zeitreihe_Dax.csv",stringsAsFactors=FALSE)
+#vergleich <- read.csv("C:/Users/cgrohmann/Desktop/Daten_Volume_Zeitreihe_Dax.csv",stringsAsFactors=FALSE)
 vergleich = as.data.table(vergleich)
 ########################################################################################################
 #Vergleich von unseren Daten mit real-world-data
 
 posdates = bestinstr[instrument_description=="DEUTSCHE BANK AG", date]
 bestinstr= merge(bestinstr,vergleich[,.(date = as.Date(X.NAME. , "%d.%m.%Y"),
-                                        from="Real-world-data",
+                                        from="External-data",
                                         sumvalue = DEUTSCHE.BANK.AG,
                                         instrument_description = "DEUTSCHE BANK AG"
-                                        )],
-                 by = c("date","sumvalue", "from", "instrument_description"), all = TRUE)
+)],
+by = c("date","sumvalue", "from", "instrument_description"), all = TRUE)
 ggplot(bestinstr[instrument_description=="DEUTSCHE BANK AG"], aes(x = date,y= sumvalue)) +
   facet_grid(from~., scale="free") +    
-  geom_line(stat = "identity") + xlab("year") + ylab("tradeVolume")
+  geom_line(stat = "identity") + xlab("year") + ylab("Tradevolume")+
+  ggtitle( "Volume of transactions daily")+
+  theme(plot.title = element_text(lineheight=.8, face="bold"))
 
 bestinstr$sumvalue[is.na(bestinstr$sumvalue)] <- 0
 
-posdates <- merge(bestinstr[instrument_description=="DEUTSCHE BANK AG" & from =="Real-world-data",.(date,sumvalue)],
+posdates <- merge(bestinstr[instrument_description=="DEUTSCHE BANK AG" & from =="External-data",.(date,sumvalue)],
                   bestinstr[instrument_description=="DEUTSCHE BANK AG" & from =="Semi-real-portfolio",.(date,sumvalue)],
                   by = "date")
 
@@ -44,14 +47,28 @@ y <- posdates$sumvalue.x
 x <- posdates$sumvalue.y
 simplemodel <- lm( y~x)
 summary(simplemodel)
+cor(x,y)
 
 bestinstr= merge(bestinstr,vergleich[,.(date = as.Date(X.NAME. , "%d.%m.%Y"),
-                                        from="Real-world-data",
+                                        from="External-data",
                                         sumvalue = DEUTSCHE.TELEKOM.AG,
                                         instrument_description = "DEUTSCHE TELEKOM AG"
-                                        )],
+)],
 by = c("date","sumvalue", "from", "instrument_description"), all = TRUE)
 ggplot(bestinstr[instrument_description=="DEUTSCHE TELEKOM AG"], aes(x = date,y= sumvalue)) +
   facet_grid(from~., scale="free") +    
-  geom_line(stat = "identity") + xlab("year") + ylab("tradeVolume")
+  geom_line(stat = "identity") + xlab("year") + ylab("Tradevolume")+
+  ggtitle( "Volume of transactions daily")+
+  theme(plot.title = element_text(lineheight=.8, face="bold"))
+bestinstr$sumvalue[is.na(bestinstr$sumvalue)] <- 0
+
+posdates <- merge(bestinstr[instrument_description=="DEUTSCHE TELEKOM AG" & from =="External-data",.(date,sumvalue)],
+                  bestinstr[instrument_description=="DEUTSCHE TELEKOM AG" & from =="Semi-real-portfolio",.(date,sumvalue)],
+                  by = "date")
+bestinstr$sumvalue[is.na(bestinstr$sumvalue)] <- 0
+y <- posdates$sumvalue.x
+x <- posdates$sumvalue.y
+simplemodel <- lm( y~x)
+summary(simplemodel)
+cor(x,y)
 
