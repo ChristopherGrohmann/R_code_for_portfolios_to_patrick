@@ -6,6 +6,7 @@
 #4. Have criterium that checks for valid hh
 #5. create a multidimensional array that connects each individual hh to a portfolio to time
 #6. create descriptive statistics to compare hh portfolios
+
 rm(list = ls())
 
 ######################################################################################################
@@ -14,7 +15,7 @@ library(RODBC)
 library (data.table)
 
 conn <- odbcConnect(dsn="Cronbach", uid="extern_root", pwd="hiwisskiera1")
-transactions <- data.table(sqlQuery(conn, "SELECT * FROM remove_error2  LIMIT 1000000")) #with limit atm
+transactions <- data.table(sqlQuery(conn, "SELECT * FROM remove_error2")) #with limit atm
 odbcClose(conn)
 
 setkey(transactions,transaction_id)
@@ -26,7 +27,7 @@ odbcClose(conn)
 setkey(instruments,instrument_id)
 
 #secifying what time the transactions can be taken from
-transactions = transactions[date <= "2011-01-01",,]
+#transactions = transactions[date <= "2011-01-01",,]
 transactions = transactions[date >= "2000-01-01",,]
 transactions$value = transactions[,(amount*price*exchange_rate * (1 - flag))+ (flag*amount*exchange_rate)]
 
@@ -197,13 +198,13 @@ median(hhy[,.(x = mean(sell_per_year)), by = user_id]$x)
 library(ggplot2)
 
 #Pie chart of transactions at a single point in time
+
 pie(c(mean(hh$Stockper),mean(hh$Bondper),mean(hh$Fundper), mean(hh$Warrentper),mean(hh$Certificateper),mean(hh$Otherper)),
     labels = a,
-    main="Percentage of transactions in Category 2000 - 2011: semi-real portfolios")
-
+    main="Percentage of transactions in category 2000 - 2011: semi-real portfolios")
 pie(c(54.62,3.41,32.48,3.02,4.94,1.54),
     labels = a,
-    main="Percentage of assetallocation in Category 2000 - 2011:real portfolios")
+    main="Percentage of asset allocation in category 2000 - 2011: external data")
 #Stacked Area chart of transactions in categories over time
 #
 
@@ -222,7 +223,7 @@ allplot <- allplot[order(Category = c("Stock", "Bond", "Fund", "Warrent", "Certi
 
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 ggplot(allplot, aes(x= year, y= plotvalue, group = V2, fill= plotvalue )) + geom_area(aes(fill= V2), position = 'stack') +
-    ggtitle( "Number of transactions in assetclass over time")
+  ggtitle( "Number of transactions in assetclass over time")
 
 
 allplot  <- hhy[ ,.(plotvalue = mean(ValueStock),(Category="Stock") ), by = year]
@@ -237,5 +238,6 @@ allplot <- merge(allplot, hhy[ ,.(plotvalue = mean(ValueCertificate),(Category="
 allplot <- merge(allplot, hhy[ ,.(plotvalue = mean(ValueOther),(Category="Other") ), by = year]
                  ,by = c("year","V2", "plotvalue"), all = TRUE)
 ggplot(allplot, aes(x= year, y= plotvalue, group = V2, fill= plotvalue )) + geom_area(aes(fill= V2), position = 'stack') +
-      ggtitle( "Volume of transactions in assetclass over time")
+  ggtitle( "Volume of transactions in asset class over time") +
+  theme(plot.title = element_text(lineheight=.8, face="bold"))
 
