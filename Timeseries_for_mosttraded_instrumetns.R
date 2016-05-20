@@ -1,4 +1,5 @@
 #timeseries for most traded instruments
+library(ggplot2)
 
 bestinstr <- transactions[,.(number_of_trans = as.integer(0) ), by=.(instrument_id,date)]
 
@@ -15,11 +16,20 @@ bestinstr[bestinstr[,.(sumall = sum(sumvalue)),by =instrument_id],
           sumall:=i.sumall, on = c(instrument_id = "instrument_id")]
 
 bestinstr = bestinstr[order(-sumall,date)]
+bestinstr$from <- "Semi-real-portfolio"
 
-bestinstr[instrument_id == 1937897,.(plot(sumvalue))]
+vergleich <- read.csv("C:/Users/Grohmann/Documents/Interactive data/Vergleichsdaten_Bloomberg_co/Daten_Volume_Zeitreihe_Dax.csv",stringsAsFactors=FALSE)
+vergleich = as.data.table(vergleich)
+########################################################################################################
+#Vergleich von unseren Daten mit real-world-data
 
-write.csv(bestinstr[1:15000], file = "C:/Users/Grohmann/Documents/Interactive data/Descriptive/time_series_of_2000_stock_dates.csv")
-on = c(instrument_id = "instrument_id",date= "date")
+bestinstr= merge(bestinstr,vergleich[,.(date = as.Date(X.NAME. , "%d.%m.%Y"),
+                                        from="Real-world-data",
+                                        sumvalue = DEUTSCHE.BANK.AG,
+                                        instrument_description = "DEUTSCHE BANK AG"
+                                        )],
+                 by = c("date","sumvalue", "from", "instrument_description"), all = TRUE)
 
-ggplot(yt.views, aes(Date, Views)) + geom_line() +
-  scale_x_date(format = "%b-%Y") + xlab("") + ylab("Daily Views")
+p  <- ggplot(bestinstr[instrument_description=="DEUTSCHE BANK AG"], aes(x = date,y= sumvalue)) +
+  facet_grid(from~., scale="free") +    
+  geom_line(stat = "identity") + xlab("year") + ylab("tradeVolume")
