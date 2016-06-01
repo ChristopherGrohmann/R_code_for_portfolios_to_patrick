@@ -1,4 +1,4 @@
-plottimeseries_assetclass = function (x){
+plottimeseries_assetclass = function (x,y = "Volume of transactions in asset class over time"){
   allplot  <- x[ ,.(plotvalue = mean(ValueStock),(Category="Stock") ), by = year]
   allplot <- merge(allplot, x[ ,.(plotvalue = mean(ValueBond),(Category="Bond") ), by = year]
                    ,by = c("year","V2", "plotvalue"), all = TRUE)
@@ -11,6 +11,6 @@ plottimeseries_assetclass = function (x){
   allplot <- merge(allplot, x[ ,.(plotvalue = mean(ValueOther),(Category="Other") ), by = year]
                    ,by = c("year","V2", "plotvalue"), all = TRUE)
   ggplot(allplot, aes(x= year, y= plotvalue, group = V2, fill= plotvalue )) + geom_area(aes(fill= V2), position = 'stack') +
-    ggtitle( "Volume of transactions in asset class over time") +
+    ggtitle( y) +
     theme(plot.title = element_text(lineheight=.8, face="bold"))
 }
