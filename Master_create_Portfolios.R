@@ -169,6 +169,13 @@ hhy[transactions[instrument_type==2,.(ValueCertificate = sum(value)), by=.(user_
 hhy$ValueOther <- hhy[,.(ValueOther =0)]
 hhy$ValueOther <- hhy$value_y- hhy$ValueStock - hhy$ValueBond - hhy$ValueFund - hhy$ValueWarrent -hhy$ValueCertificate
 #######################################################################
+#Adding selles and buyes
+hhy[transactions[tradetype== "K",.(Valuebuy = sum(value)), by=.(user_id,year= year(date))]
+    ,Valuebuy:= i.Valuebuy, on = c(user_id = "user_id",year= "year")]
+hhy[transactions[tradetype== "v",.(Valuesell = sum(value)), by=.(user_id,year= year(date))]
+    ,Valuesell:= i.Valuesell, on = c(user_id = "user_id",year= "year")]
+
+#######################################################################
 #Descriptive Statistics about values
 hhy = hhy[value_y != 0]
 
