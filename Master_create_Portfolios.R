@@ -15,7 +15,7 @@ library(RODBC)
 library (data.table)
 
 conn <- odbcConnect(dsn="Cronbach", uid="extern_root", pwd="hiwisskiera1")
-transactions <- data.table(sqlQuery(conn, "SELECT * FROM remove_error2")) #with limit atm
+transactions <- data.table(sqlQuery(conn, "SELECT * FROM remove_error2 LIMIT 100000")) #with limit atm
 odbcClose(conn)
 
 setkey(transactions,transaction_id)
@@ -57,7 +57,7 @@ hh = transactions[,.(anzahl_transactionen = 0),by=user_id]
 # 3. Create descriptive statistics:
 #Using what we already used in MySQL
 hh$anzahl_transactionen = transactions[,.(anzahl_transactionen =length(transaction_id)),by=user_id]$anzahl_transactionen
-hh[transactions[,.(anzahl_transactionen = .N),by=user_id]anzahl_transactionen:=i.anzahl_transactionen, on ="user_id" ]
+hh[transactions[,.(anzahl_transactionen = .N),by=user_id] anzahl_transactionen:=i.anzahl_transactionen, on ="user_id" ]
 hh$anzahl_verkaufe = transactions[,.(anzahl_verkaufe = sum((tradetype=="V"), na.rm=TRUE)),by=user_id]$anzahl_verkaufe
 
 hh$anteil_verkaufe = hh$anzahl_verkaufe/hh$anzahl_transactionen
