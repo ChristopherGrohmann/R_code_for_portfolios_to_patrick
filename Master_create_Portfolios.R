@@ -57,15 +57,25 @@ hh = transactions[,.(anzahl_transactionen = 0),by=user_id]
 # 3. Create descriptive statistics:
 #Using what we already used in MySQL
 hh$anzahl_transactionen = transactions[,.(anzahl_transactionen =length(transaction_id)),by=user_id]$anzahl_transactionen
+hh[transactions[,.(anzahl_transactionen = .N),by=user_id]anzahl_transactionen:=i.anzahl_transactionen, on ="user_id" ]
 hh$anzahl_verkaufe = transactions[,.(anzahl_verkaufe = sum((tradetype=="V"), na.rm=TRUE)),by=user_id]$anzahl_verkaufe
+
 hh$anteil_verkaufe = hh$anzahl_verkaufe/hh$anzahl_transactionen
+
 hh$active_time = as.integer(transactions[,.(active_time = max(date)-min(date)),by=user_id]$active_time)
+
 hh$yearly_transactions = hh$anzahl_transactionen/(hh$active_time/356)
+
 hh$sum_transaction = transactions[,.(sum_transaction = sum(value) ),by=user_id]$sum_transaction
+
 hh$avaerage_transaction = hh$sum_transaction/hh$anzahl_transactionen
+
 hh$max_transaction = transactions[,.(max_transaction = max(value) ),by=user_id]$max_transaction
+
 hh$sd_transactions_value = transactions[,.(sd_transactions_value = sd(value) ),by=user_id]$sd_transactions_value
+
 hh$sd_by_average = hh$sd_transactions_value/hh$avaerage_transaction
+
 hh$yearly_trunover = ifelse(hh$active_time/365>=1, hh$avaerage_transaction * hh$yearly_transactions, hh$sum_transaction)
 
 
