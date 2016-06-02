@@ -172,8 +172,11 @@ hhy$ValueOther <- hhy$value_y- hhy$ValueStock - hhy$ValueBond - hhy$ValueFund - 
 #Adding selles and buyes
 hhy[transactions[tradetype== "K",.(Valuebuy = sum(value)), by=.(user_id,year= year(date))]
     ,Valuebuy:= i.Valuebuy, on = c(user_id = "user_id",year= "year")]
-hhy[transactions[tradetype== "v",.(Valuesell = sum(value)), by=.(user_id,year= year(date))]
+
+hhy[transactions[tradetype== "V",.(Valuesell = -sum(value)), by=.(user_id,year= year(date))]
     ,Valuesell:= i.Valuesell, on = c(user_id = "user_id",year= "year")]
+#Knallhart!
+hhy[is.na(hhy)] <- 0
 
 #######################################################################
 #Descriptive Statistics about values
