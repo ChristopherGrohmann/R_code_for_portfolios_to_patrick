@@ -35,21 +35,35 @@ actions$value[actions$action_type == "S"] <- -actions$value[actions$action_type 
 #Don't throw away "thank you"s
 actions$value[actions$action_type == "S"] <- -actions$value[actions$action_type == "S"]
 #No does not stack the existing positions
-portfolios <- actions[,.(instrument=0, value = 0), by = c("User_id","time")]
-
+portfolios <- actions[,.(time= 0, instrument=0, value = 0,isnegative = 1), by = c("User_id")]
 
 #Try the whole thing with loops
-for (i in 1:4){
-  for (j in 1:4){
-    portfolios[User_id == i & time == j ] <- portfolios[User_id == i & time == j - 1]#case in the beginning, where no previous allocation exists
-    if ( actions[User_id == i & time == j, instrument] in portfolios[User_id ==i & time==j, instrument]){
-      portfolios$value[User_id ==i,time==j, instrument == actions$instrument[User_id == i,time == j]] <- portfolios$value[User_id ==i,time==j, instrument == actions$instrument[User_id == i,time == j]] + actions$value[User_id == i,time == j]
-    }else{
-      #Create a new row, that has the transaction
-      portfolios <- rbindlist(list (portfolios,actions[User_id == i & time == j ,.(User_id,time, instrument, value)]))
+hh <- actions[,.(mean(value)) , by = c("User_id")]
+list <- as.list (hh$User_id)
+
+for (k in 1: length(list)){
+  i <- list[k]
+  min <- as.double(actions[User_id==i, .(min(time ))])
+  
+  actiontime <- as.list(actions$time[actions$User_id== i])
+  for (j in min:4){
+    #portfolios[User_id == i & time == j] <- portfolios[User_id == i & time == j - 1,.( User_id, time=j, instrument, value, isnegative )]#case in the beginning, where no previous allocation exists
+    portfolios <- rbindlist(list (portfolios,portfolios[User_id == i & time == j - 1,.( User_id, time = j, instrument, value, isnegative )]))
+    
+    if ( j %in% actiontime){
+      if ( actions[User_id == i & time == j, instrument] %in% portfolios[User_id ==i & time==j, instrument]){
+        x<- actions$instrument[actions$User_id == i & actions$time == j]
+        portfolios$value[portfolios$User_id ==i & portfolios$time==j & portfolios$instrument == x] <- portfolios$value[portfolios$User_id ==i & portfolios$time==j & portfolios$instrument == x] + actions$value[actions$User_id == i & actions$time == j]
+        
+      }else{
+        
+        #Create a new row, that has the transaction
+        portfolios <- rbindlist(list (portfolios,actions[User_id == i & time == j ,.(User_id,time, instrument, value, isnegative =0)]))
+      }
+      #those postitions that have zero value should drop out
+      portfolios$isnegative[portfolios$value <=0 &  portfolios$User_id ==i &  portfolios$time==j] <- 1
+      portfolios <- portfolios[isnegative != 1]
     }
-    #those postitions that have zero value should drop out
-    portfolios <- portfolios[ value > 0]
   }
 }
 
