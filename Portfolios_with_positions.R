@@ -1,84 +1,80 @@
 #Simple example for getting portfolios
 library (data.table)
 
-actions <- data.table(User_id = c("Carl","Carl","Carl","Carl","Lisa","Lisa","Moe"),
-                     time = c(1,2,3,4,2,3,2 ),
-                     action_type = c("B","B","S","S","B","S","B"),
-                     instrument = c("X","Y","X","Y","Y","Y","X"),
-                     value= c(10,20,10,20,40,40,50) )
-
+actions <- data.table(user_id = c("Carl","Carl","Carl","Carl","Carl","Lisa","Lisa","Moe"),
+                     date = c(1,2,2,3,4,2,3,2 ),
+                     action_type = c("B","B","B","S","S","B","S","B"),
+                     instrument_id_intern = c("X","Y","X","X","Y","Y","Y","X"),
+                     amount= c(10,20,5,15,20,40,40,50)) 
+                     
+actions$date <- as.Date(actions$date, origin="1970-01-01")
 ###desired Result
-portfolios <- data.table(User_id = c("Carl","Carl","Carl","Carl","Lisa","Moe","Moe","Moe"),
-                         time = c(1,2,2,3,2,2,3,4 ),
+portfolios <- data.table(user_id = c("Carl","Carl","Carl","Carl","Lisa","Moe","Moe","Moe"),
+                         date = c(1,2,2,3,2,2,3,4 ),
                          position = c("X","X","Y","Y","Y","X","X","X"),
-                         value= c(10,10,20,20,40,50,50,50) )
+                         amount= c(10,15,20,20,40,50,50,50) )
 
-#Changeing values to negative values for "S"ell
-actions$value[actions$action_type == "S"] <- -actions$value[actions$action_type == "S"]
+#Changeing amounts to negative amounts for "S"ell
+actions$amount[actions$action_type == "S"] <- -actions$amount[actions$action_type == "S"]
 
 #pseudo code
 
 #for users
-  #for time
+  #for date
     #position(i,j) = position (i,j-1)
     #if action (i,j)
       #if action(i,j) is in  position(i,j)
-        #position.value = position.value +action.value
+        #position.amount = position.amount +action.amount
       #else
         #add a new row 
         #position(i,j) = action(i,j)
-      #portfolios[User_id == i & time == j ] <- portfolios[User_id == i & time == j &  value > 0]
+      #portfolios[user_id == i & date == j ] <- portfolios[user_id == i & date == j &  amount > 0]
 
 #ist das so verst‰ndlich?
 #Habe ich da was groﬂes vergessen?
 
 #Don't throw away "thank you"s
-actions$value[actions$action_type == "S"] <- -actions$value[actions$action_type == "S"]
-#No does not stack the existing positions
-portfolios <- actions[,.(time= 0, instrument=0, value = 0,isnegative = 1), by = c("User_id")]
+actions$amount[actions$action_type == "S"] <- -actions$amount[actions$action_type == "S"]
 
-#Try the whole thing with loops
-hh <- actions[,.(mean(value)) , by = c("User_id")]
-list <- as.list (hh$User_id)
+hh <- actions[,.(mean(amount)) , by = c("user_id")]
 
-for (k in 1: length(list)){
-  i <- list[k]
-  min <- as.double(actions[User_id==i, .(min(time ))])
+
+generate.portfolios(actions = actions,hh =hh)
+
+generate.portfolios= function(actions,churntime=720){
+  #No does not stack the existing positions
+  actions$user_id <- as.character(actions$user_id)
+  portfolios <- actions[,.(date= min(date)-1, instrument_id_intern=mean(instrument_id_intern), amount = mean(amount),isnegative = 1), by = c("user_id")]
+  hh <- actions[,.(mean(amount)) , by = c("user_id")]
   
-  actiontime <- as.list(actions$time[actions$User_id== i])
-  for (j in min:4){
-    #portfolios[User_id == i & time == j] <- portfolios[User_id == i & time == j - 1,.( User_id, time=j, instrument, value, isnegative )]#case in the beginning, where no previous allocation exists
-    portfolios <- rbindlist(list (portfolios,portfolios[User_id == i & time == j - 1,.( User_id, time = j, instrument, value, isnegative )]))
+  #Try the whole thing with loops
+  list <- hh$user_id
+  
+  for (k in 1: length(list)){
+    i <- list[k]
+    #don't start from the earliest date, but the earliest the user has a transaction
+    min <- as.double(actions[user_id==i, .(min(date ))])
+    max <- as.double(actions[user_id==i, .(max(date ))])
+    #list, when the user has transactions
+    actiondate <- as.list(actions$date[actions$user_id== i])
     
-    if ( j %in% actiontime){
-      if ( actions[User_id == i & time == j, instrument] %in% portfolios[User_id ==i & time==j, instrument]){
-        x<- actions$instrument[actions$User_id == i & actions$time == j]
-        portfolios$value[portfolios$User_id ==i & portfolios$time==j & portfolios$instrument == x] <- portfolios$value[portfolios$User_id ==i & portfolios$time==j & portfolios$instrument == x] + actions$value[actions$User_id == i & actions$time == j]
-        
-      }else{
-        
-        #Create a new row, that has the transaction
-        portfolios <- rbindlist(list (portfolios,actions[User_id == i & time == j ,.(User_id,time, instrument, value, isnegative =0)]))
+    for (j in min:(max+churntime)){#churndate is the extra time after the last transaction, until the user is decided to have churned
+      portfolios <- rbindlist(list (portfolios, portfolios[user_id == i & date == j - 1,.( user_id, date = as.Date(j, origin="1970-01-01"), instrument_id_intern, amount, isnegative )]))
+      if ( j %in% actiondate){
+        if (actions[user_id == i & date == j, instrument_id_intern] %in% portfolios[user_id ==i & date==j, instrument_id_intern]){
+          x<- actions$instrument_id_intern[actions$user_id == i & actions$date == j]
+          portfolios$amount[portfolios$user_id ==i & portfolios$date==j & portfolios$instrument_id_intern == x] <- portfolios$amount[portfolios$user_id ==i & portfolios$date==j & portfolios$instrument_id_intern == x] + actions$amount[actions$user_id == i & actions$date == j]
+          
+        }else{
+          #Create a new row, that has the transaction
+          portfolios <- rbindlist(list (portfolios,actions[user_id == i & date == j ,.(user_id,date, instrument_id_intern, amount, isnegative =0)]))
+        }
+        #those postitions that have zero amount should drop out
+        portfolios$isnegative[portfolios$amount <=0 &  portfolios$user_id ==i &  portfolios$date==j] <- 1
+        portfolios <- portfolios[isnegative != 1]
       }
-      #those postitions that have zero value should drop out
-      portfolios$isnegative[portfolios$value <=0 &  portfolios$User_id ==i &  portfolios$time==j] <- 1
-      portfolios <- portfolios[isnegative != 1]
     }
   }
+  return(portfolios)
 }
 
-portfolios <- portfolios[order(time)]
-####With loops:
-for (i in 1 :4){
-  merge(portfolios[time== i,], actions[time==i]) 
-} 
-
-
-allplot <- merge(allplot, x[ ,.(plotvalue = mean(ValueCertificate),(Category="Certificate") ), by = year]
-                 ,by = c("year","V2", "plotvalue"), all = TRUE)
-
-hhy[transactions[tradetype== "K",.(Valuebuy = sum(value)), by=.(user_id,year= year(date))]
-    ,Valuebuy:= i.Valuebuy, on = c(user_id = "user_id",year= "year")]
-
-
-portfolios
