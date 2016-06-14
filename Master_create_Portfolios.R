@@ -15,7 +15,7 @@ library(RODBC)
 library (data.table)
 
 conn <- odbcConnect(dsn="Cronbach", uid="extern_root", pwd="hiwisskiera1")
-transactions <- data.table(sqlQuery(conn, "SELECT * FROM remove_error2 LIMIT 100000")) #with limit atm
+transactions <- data.table(sqlQuery(conn, "SELECT * FROM remove_error2 LIMIT 10000")) #with limit atm
 odbcClose(conn)
 
 setkey(transactions,transaction_id)
@@ -38,22 +38,9 @@ transactions$value = transactions[,(amount*price*exchange_rate * (1 - flag))+ (f
 ####################################################################################################
 #3. Organizing it in an arrray
 
-# transactions[,,keyby=user_id]
-# hh = unique(transactions$user_id)
-#Alternative
 setkey(transactions, user_id)
 hh = transactions[,.(anzahl_transactionen = 0),by=user_id]
-# dates = unique(transactions$date)
-# 
-# portfolios = array(data = NA, dim = c(length(hh),1000,3,length(dates)))#, dimnames = list("hh","positions","attributes","date"))
 
-# for (i in 1 : length(hh)){
-#   portfolios[i,,,]=hh[i]
-#   positions = transactions[hh[i],instrument_id_intern, by = instrument_id_intern]
-#   for (j in 1 :lenght(positions)){
-#     portfolios[i,j,,]=
-#   }
-# }
 # 3. Create descriptive statistics:
 #Using what we already used in MySQL
 hh$anzahl_transactionen = transactions[,.(anzahl_transactionen =length(transaction_id)),by=user_id]$anzahl_transactionen
@@ -91,6 +78,8 @@ hh[,mean(avaerage_transaction)]
 hist(hh$avaerage_transaction)
 summary(hh$avaerage_transaction)
 
+transactions$amount[transactions$tradetype == "V"] <- -transactions$amount[transactions$tradetype == "V"]
+
 #####################################################################################################
 #5. Join hh to transactions to Instruments
 
@@ -103,6 +92,12 @@ transactions <- transactions[hh, nomatch=0]
 setkey(transactions, instrument_id_intern)
 setkey(instruments, instrument_id)
 transactions <- transactions[instruments, nomatch=0]
+
+######################################################################################################
+#6. Create portfolios with simultaneous actions in the portfolios
+
+#portfolios <- generate.portfolios(actions = transactions)
+
 
 a= c("Stock", "Bond", "Fund", "Warrent", "Certificate", "Other")
 setkey(transactions, user_id)
