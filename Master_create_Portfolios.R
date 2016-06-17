@@ -15,7 +15,7 @@ library(RODBC)
 library (data.table)
 
 conn <- odbcConnect(dsn="Cronbach", uid="extern_root", pwd="hiwisskiera1")
-transactions <- data.table(sqlQuery(conn, "SELECT * FROM remove_error2 LIMIT 10000")) #with limit atm
+transactions <- data.table(sqlQuery(conn, "SELECT * FROM remove_error2 LIMIT 100000")) #with limit atm
 odbcClose(conn)
 
 setkey(transactions,transaction_id)
@@ -96,8 +96,7 @@ transactions <- transactions[instruments, nomatch=0]
 ######################################################################################################
 #6. Create portfolios with simultaneous actions in the portfolios
 
-#portfolios <- generate.portfolios(actions = transactions)
-
+portfolios <- generate.portfolios(actions = transactions)
 
 a= c("Stock", "Bond", "Fund", "Warrent", "Certificate", "Other")
 setkey(transactions, user_id)
