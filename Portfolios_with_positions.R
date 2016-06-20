@@ -48,14 +48,13 @@ generate.portfolios= function(actions,churntime=720){
   #to create a empty portfolios, that has the right data configuartions in each variable
   portfolios <- actions[1,.(user_id,date, instrument_id_intern, amount , isnegative =1)]
   portfolios <- portfolios[isnegative != 1]
-  
+  large_portfolio <- portfolios
   hh <- actions[,.(v1=0) , by = c("user_id")]
   list <- hh$user_id
   for (k in 1: length(list)){
     i <- list[k]
-    #don't start from the earliest date, but the earliest the user has a transaction
-    # min <- as.double(actions[user_id==i, .(min(date ))])
-    # max <- as.double(actions[user_id==i, .(max(date ))])
+    
+    portfolios <- portfolios[isnegative == 1]
     #list, when the user has transactions
     tage <- actions[actions$user_id== i,(v1=0), by= date]
     actiondate <- as.numeric(tage$date)
@@ -68,7 +67,8 @@ generate.portfolios= function(actions,churntime=720){
         portfolios <- rbindlist(list (portfolios,
                                       portfolios[user_id == i & date == date_before,
                                                  .( user_id, date = as.Date(j, origin="1970-01-01"), instrument_id_intern, amount, isnegative )]))
-        #got through all positions seperatly, but sum them up, so there is in the end one position per several transaction per day per user per instrument.
+        #got through all positions seperatly, but sum them up, so there is in the
+        #end one position per several transaction per day per user per instrument.
         actions_at_time_dt <- actions[user_id == i & date == j,(v1=0),by= instrument_id_intern]
         actions_at_time <- as.numeric(actions_at_time_dt$instrument_id_intern)
         for (m in 1:length(actions_at_time)){
@@ -98,8 +98,9 @@ generate.portfolios= function(actions,churntime=720){
         }
       }
       
-    }
+   }
+  large_portfolio <- rbindlist(list (large_portfolio,portfolios))
   }
-  return(portfolios)
+  return(large_portfolio)
 }
 
