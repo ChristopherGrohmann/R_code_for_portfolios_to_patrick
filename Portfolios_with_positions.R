@@ -41,14 +41,14 @@ hh <- actions[,.(mean(amount)) , by = c("user_id")]
 
 generate.portfolios(actions = actions,hh =hh)
 
-generate.portfolios= function(actions,churntime=720){
+generate.portfolios= function(actions){
   #No does not stack the existing positions
   actions$user_id <- as.character(actions$user_id)
   setkey(actions,user_id,date,instrument_id_intern)
   #to create a empty portfolios, that has the right data configuartions in each variable
   portfolios <- actions[1,.(user_id,date, instrument_id_intern, amount , isnegative =1)]
   portfolios <- portfolios[isnegative != 1]
-  large_portfolio <- portfolios
+  large_portfolio <- portfolios[,.(user_id,date, instrument_id_intern, amount)]
   hh <- actions[,.(v1=0) , by = c("user_id")]
   list <- hh$user_id
   for (k in 1: length(list)){
@@ -59,7 +59,7 @@ generate.portfolios= function(actions,churntime=720){
     tage <- actions[actions$user_id== i,(v1=0), by= date]
     actiondate <- as.numeric(tage$date)
     
-    for (l in 1:length(actiondate)){    #min:(max+churntime)){   
+    for (l in 1:length(actiondate)){
       #churndate is the extra time after the last transaction, until the user is decided to have churned
       j <- actiondate[l]
       if (l != 1){ #This is the normal case, there exist already positioins for one user. 
@@ -99,7 +99,7 @@ generate.portfolios= function(actions,churntime=720){
       }
       
    }
-  large_portfolio <- rbindlist(list (large_portfolio,portfolios))
+  large_portfolio <- rbindlist(list (large_portfolio,portfolios[,.(user_id,date, instrument_id_intern, amount)]))
   }
   return(large_portfolio)
 }
