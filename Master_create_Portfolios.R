@@ -99,6 +99,11 @@ ptm <- proc.time()
 portfolios <- generate.portfolios(actions = transactions)
 proc.time() - ptm
 
+ptm <- proc.time()
+zu2010 <- portfolios_at_date(date_at = "2010-6-01",portfolios)
+proc.time() - ptm
+
+
 a= c("Stock", "Bond", "Fund", "Warrent", "Certificate", "Other")
 setkey(transactions, user_id)
 hh$Stock = transactions[,.(Stock=sum((instrument_type==1 ), na.rm=TRUE)),by=user_id]$Stock
