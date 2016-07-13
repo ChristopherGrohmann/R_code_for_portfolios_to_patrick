@@ -15,7 +15,7 @@ library(RODBC)
 library (data.table)
 
 conn <- odbcConnect(dsn="Cronbach", uid="extern_root", pwd="hiwisskiera1")
-transactions <- data.table(sqlQuery(conn, "SELECT * FROM remove_error2 LIMIT 10000")) #with limit atm
+transactions <- data.table(sqlQuery(conn, "SELECT * FROM remove_error2 LIMIT 100000")) #with limit atm
 odbcClose(conn)
 
 setkey(transactions,transaction_id)
@@ -70,7 +70,7 @@ hh$yearly_trunover = ifelse(hh$active_time/365>=1, hh$avaerage_transaction * hh$
 #4. Have a criterium that checks for valid hh
 
 hh <- hh[anzahl_transactionen > 3,,]
-hh <- hh[anteil_verkaufe > 0,,]
+hh <- hh[anteil_verkaufe > 0.25,,]
 hh <- hh[active_time >30,,]
 hh <- hh[sd_by_average < 3]
 hh <- hh[avaerage_transaction <=100000]
@@ -78,8 +78,7 @@ hh[,mean(avaerage_transaction)]
 hist(hh$avaerage_transaction)
 summary(hh$avaerage_transaction)
 
-transactions$amount[transactions$tradetype == "V"] <- -transactions$amount[transactions$tradetype == "V"]
-
+transactions[tradetype == "V", amount := transactions[tradetype == "V", -amount]]
 #####################################################################################################
 #5. Join hh to transactions to Instruments
 
@@ -96,7 +95,13 @@ transactions <- transactions[instruments, nomatch=0]
 ######################################################################################################
 #6. Create portfolios with simultaneous actions in the portfolios
 
-#portfolios <- generate.portfolios(actions = transactions)
+ptm <- proc.time()
+portfolios <- generate.portfolios(actions = transactions)
+proc.time() - ptm
+
+ptm <- proc.time()
+zu2010 <- portfolios_at_date(date_at = "2010-6-01",portfolios)
+proc.time() - ptm
 
 
 a= c("Stock", "Bond", "Fund", "Warrent", "Certificate", "Other")
